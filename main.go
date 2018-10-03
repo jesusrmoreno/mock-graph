@@ -208,13 +208,6 @@ type GraphDefinition struct {
 	NodeDefs            []NodeDefinition         `json:"nodes"`
 	RelationshipDefs    []RelationshipDefinition `json:"relationships"`
 	RemoveOrphanedNodes bool                     `json:"removeOrphanedNodes"`
-	Entries             []EntryDefinition        `json:"entries"`
-}
-
-// EntryDefinition ...
-type EntryDefinition struct {
-	Label               string `json:"label"`
-	IncludeDisconnected string `json:"includeDisconnected"`
 }
 
 // PropertiesDefinition holds the available properties on either a node or an edge
