@@ -401,21 +401,43 @@ func buildGraph(g GraphDefinition) (Graph, error) {
 	return graph, nil
 }
 
+type lambdaError struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
+func handleError(errorObject error, code int) (events.APIGatewayProxyResponse, error) {
+	e := events.APIGatewayProxyResponse{}
+	l := lambdaError{
+		Message: errorObject.Error(),
+		Code:    code,
+	}
+
+	b, err := json.Marshal(l)
+	if err != nil {
+		return e, err
+	}
+	return events.APIGatewayProxyResponse{
+		StatusCode: code,
+		Body:       string(b),
+	}, nil
+}
+
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Printf("Processing request data for request %s.\n", request.RequestContext.RequestID)
 	g := GraphDefinition{}
 	if err := json.Unmarshal([]byte(request.Body), &g); err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return handleError(err, 400)
 	}
 
 	graph, err := buildGraph(g)
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return handleError(err, 400)
 	}
 
 	mGraph, err := json.Marshal(graph)
 	if err != nil {
-		return events.APIGatewayProxyResponse{}, err
+		return handleError(err, 400)
 	}
 
 	return events.APIGatewayProxyResponse{
