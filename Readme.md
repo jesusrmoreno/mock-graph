@@ -122,3 +122,11 @@ curl -X POST \
   ]
 }'
 ```
+
+# Error example
+```
+{
+    "message": "relationship definition must include type: 1..n, 1..1, n..n",
+    "code": 400
+}
+```
