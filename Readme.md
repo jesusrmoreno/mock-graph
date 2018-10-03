@@ -1,3 +1,9 @@
+A small application to generate mock graph structures. 
+
+All relationships are directed and only connected nodes are returned. 
+
+Relationship types are currently `1..n`, `n..n`, `1..1` and are treated as _at least one_.
+This very much an early WIP so if any issues are found please open an issue.
 # Example Schema
 ```
 {
