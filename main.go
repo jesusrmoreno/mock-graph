@@ -284,16 +284,6 @@ func verifyRelationshipDefinition(rd RelationshipDefinition, nodesByLabel map[st
 	return nil
 }
 
-func connectedNodes(nodes []Node, connectedLookup map[string]bool) []Node {
-	connected := []Node{}
-	for _, node := range nodes {
-		if connectedLookup[node.ID] {
-			connected = append(connected, node)
-		}
-	}
-	return connected
-}
-
 func shuffleNodes(vals []Node) []Node {
 	rand.Shuffle(len(vals), func(i, j int) {
 		vals[i], vals[j] = vals[j], vals[i]
