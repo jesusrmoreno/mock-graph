@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-
 	"github.com/aws/aws-lambda-go/lambda"
+
 	"github.com/icrowley/fake"
 	uuid "github.com/satori/go.uuid"
 )
@@ -446,6 +449,32 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}, nil
 }
 
+func local() {
+	jsonFile, err := os.Open("schema.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer jsonFile.Close()
+	byteValue, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	graph := GraphDefinition{}
+	// we unmarshal our byteArray which contains our
+	// jsonFile's content into 'users' which we defined above
+	json.Unmarshal(byteValue, &graph)
+	g, err := buildGraph(graph)
+	bytes, err := json.Marshal(g)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(string(bytes))
+}
+
 func main() {
-	lambda.Start(handler)
+	if _, exists := os.LookupEnv("IS_LAMBDA"); exists {
+		lambda.Start(handler)
+	} else {
+		local()
+	}
 }
