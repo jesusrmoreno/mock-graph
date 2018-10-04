@@ -28,8 +28,11 @@ func random(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func populate(prop string) interface{} {
-	p := strings.Title(prop)
+func populate(prop ArrayOrString) interface{} {
+	if len(prop.Values) > 0 {
+		return prop.Values[random(0, len(prop.Values))]
+	}
+	p := strings.Title(prop.Value)
 	switch p {
 	case "Name":
 		v := []string{fake.MaleFullName(), fake.FemaleFullName()}
@@ -214,7 +217,7 @@ type GraphDefinition struct {
 }
 
 // PropertiesDefinition holds the available properties on either a node or an edge
-type PropertiesDefinition map[string]string
+type PropertiesDefinition map[string]ArrayOrString
 
 // NodeDefinition holds a node object
 type NodeDefinition struct {
@@ -409,6 +412,10 @@ type lambdaError struct {
 	Code    int    `json:"code"`
 }
 
+var headers = map[string]string{
+	"Access-Control-Allow-Origin": "*",
+}
+
 func handleError(errorObject error, code int) (events.APIGatewayProxyResponse, error) {
 	e := events.APIGatewayProxyResponse{}
 	l := lambdaError{
@@ -423,11 +430,13 @@ func handleError(errorObject error, code int) (events.APIGatewayProxyResponse, e
 	return events.APIGatewayProxyResponse{
 		StatusCode: code,
 		Body:       string(b),
+		Headers:    headers,
 	}, nil
 }
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	fmt.Printf("Processing request data for request %s.\n", request.RequestContext.RequestID)
+
 	g := GraphDefinition{}
 	if err := json.Unmarshal([]byte(request.Body), &g); err != nil {
 		return handleError(err, 400)
@@ -446,6 +455,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	return events.APIGatewayProxyResponse{
 		Body:       string(mGraph),
 		StatusCode: 200,
+		Headers:    headers,
 	}, nil
 }
 
@@ -462,7 +472,10 @@ func local() {
 	graph := GraphDefinition{}
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'users' which we defined above
-	json.Unmarshal(byteValue, &graph)
+
+	if err := json.Unmarshal(byteValue, &graph); err != nil {
+		log.Fatal(err)
+	}
 	g, err := buildGraph(graph)
 	bytes, err := json.Marshal(g)
 	if err != nil {
