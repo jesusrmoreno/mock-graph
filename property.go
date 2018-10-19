@@ -3,35 +3,59 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/icrowley/fake"
 )
 
+// Values object that keeps track of stuff
+type Values struct {
+	Count   int           `json:"count"`
+	Options []interface{} `json:"options"`
+}
+
 // Property is a custom type that allows us to support
 // unmarshaling properties as either an Property
 // either Values or Value will be populated so consumers should check for
 // the length of Values before proceeding with Value
 type Property struct {
-	Values []interface{}
-	Value  string
+	Values Values `json:"values"`
+	Value  string `json:"value"`
 }
 
 // UnmarshalJSON fulfills the interface so we can use json.Unmarshal
 func (p *Property) UnmarshalJSON(b []byte) error {
-	if b[0] == '[' {
+	if b[0] == '{' {
 		return json.Unmarshal(b, &p.Values)
 	}
 	return json.Unmarshal(b, &p.Value)
+}
+
+func shuffleValues(vals []interface{}) []interface{} {
+	v := []interface{}{}
+	rand.Shuffle(len(vals), func(i, j int) {
+		vals[i], vals[j] = vals[j], vals[i]
+	})
+	return append(v, vals...)
+}
+
+func sampleValues(v []interface{}, count int) []interface{} {
+	sv := shuffleValues(v)
+	vv := []interface{}{}
+	for i := 0; i < count && i < len(v); i++ {
+		vv = append(vv, sv[i])
+	}
+	return vv
 }
 
 // Populate will return either a value from the array of options if the property
 // is an array, a mock value if the property string matches one of the supported
 // generators, or the property string if it is not supported.
 func (p *Property) Populate() interface{} {
-	if len(p.Values) > 0 {
-		return p.Values[random(0, len(p.Values))]
+	if p.Values.Count > 0 && len(p.Values.Options) > 0 {
+		return sampleValues(p.Values.Options, p.Values.Count)
 	}
 	casedProp := strings.Title(p.Value)
 	switch casedProp {

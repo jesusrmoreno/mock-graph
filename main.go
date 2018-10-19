@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -22,10 +23,11 @@ const (
 )
 
 func random(min, max int) int {
-	return rand.Intn(max-min) + min
+	r1 := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return r1.Intn(max-min) + min
 }
 
-// GraphDefinition holds the initial and final graph structure
+// GraphDefinition will hold the parameters defined by the schema
 type GraphDefinition struct {
 	NodeDefs            []NodeDefinition         `json:"nodes"`
 	RelationshipDefs    []RelationshipDefinition `json:"relationships"`
@@ -54,23 +56,24 @@ type RelationshipDefinition struct {
 	Type       string               `json:"type"`
 }
 
-// Node ...
+// Node has properties and will be assigned a UUID by the app.
 type Node struct {
 	Properties map[string]interface{} `json:"properties"`
 	Label      string                 `json:"label"`
 	ID         string                 `json:"id"`
 }
 
-// Edge ...
+// Edge will be included in the final graph
 type Edge struct {
-	Source      string `json:"source"`
-	Target      string `json:"target"`
-	Label       string `json:"label"`
-	SourceLabel string `json:"sourceLabel"`
-	TargetLabel string `json:"targetLabel"`
+	Source      string                 `json:"source"`
+	Target      string                 `json:"target"`
+	Label       string                 `json:"label"`
+	SourceLabel string                 `json:"sourceLabel"`
+	TargetLabel string                 `json:"targetLabel"`
+	Properties  map[string]interface{} `json:"properties"`
 }
 
-// Graph ...
+// Graph will hold the final sets of nodes and edges
 type Graph struct {
 	Nodes []Node `json:"nodes"`
 	Edges []Edge `json:"edges"`
@@ -133,14 +136,21 @@ func createNodes(g GraphDefinition) (map[string][]Node, error) {
 	return nodesByLabel, nil
 }
 
-func addEdge(edges []Edge, u, v Node, label string) []Edge {
-	return append(edges, Edge{
+func shouldTrim(relationshipType string) bool {
+	return relationshipType == oneToOne || relationshipType == oneToMany || relationshipType == manyToMany
+}
+
+func addEdge(edges []Edge, u, v Node, d RelationshipDefinition) []Edge {
+	props := generateProperties(d.Properties)
+	e := Edge{
 		Source:      u.ID,
 		Target:      v.ID,
-		Label:       label,
+		Label:       d.Label,
 		SourceLabel: u.Label,
 		TargetLabel: v.Label,
-	})
+		Properties:  props,
+	}
+	return append(edges, e)
 }
 
 func buildGraph(g GraphDefinition) (Graph, error) {
@@ -172,7 +182,7 @@ func buildGraph(g GraphDefinition) (Graph, error) {
 							if targetConnects[v.ID] == 0 {
 								sourceConnects[u.ID]++
 								targetConnects[v.ID]++
-								edges = addEdge(edges, u, v, d.Label)
+								edges = addEdge(edges, u, v, d)
 								nodes[u.ID] = u
 								nodes[v.ID] = v
 							}
@@ -187,21 +197,20 @@ func buildGraph(g GraphDefinition) (Graph, error) {
 							}
 							sourceConnects[u.ID]++
 							targetConnects[v.ID]++
-							edges = addEdge(edges, u, v, d.Label)
+							edges = addEdge(edges, u, v, d)
 							nodes[u.ID] = u
 							nodes[v.ID] = v
 						}
 						if d.Type == manyToMany {
 							sourceConnects[u.ID]++
 							targetConnects[v.ID]++
-							edges = addEdge(edges, u, v, d.Label)
+							edges = addEdge(edges, u, v, d)
 							nodes[u.ID] = u
 							nodes[v.ID] = v
 						}
 					}
 				}
 			}
-
 			// We want to remove targets that have not been connected
 			// this will make sure that we get a connected graph
 			connectedTargets := []Node{}
@@ -298,6 +307,7 @@ func local() {
 		log.Fatal(err)
 	}
 	log.Println(string(bytes))
+	log.Println(random(0, 100), graph.RelationshipDefs[0].Chance)
 }
 
 func main() {

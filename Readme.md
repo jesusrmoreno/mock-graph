@@ -1,10 +1,12 @@
-A small application to generate mock graph structures. 
+A small application to generate mock graph structures.
 
-All relationships are directed and only connected nodes are returned. 
+All relationships are directed and only connected nodes are returned.
 
 Relationship types are currently `1..n`, `n..n`, `1..1` and are treated as _at least one_.
 This very much an early WIP so if any issues are found please open an issue.
+
 # Example Schema
+
 ```
 {
   "nodes": [
@@ -64,7 +66,9 @@ This very much an early WIP so if any issues are found please open an issue.
   ]
 }
 ```
+
 # Test Request
+
 ```
 curl -X POST \
   https://utmn8prfg1.execute-api.us-west-2.amazonaws.com/prod \
@@ -130,6 +134,7 @@ curl -X POST \
 ```
 
 # Example response
+
 ```
 {
     "nodes": [
@@ -752,6 +757,7 @@ curl -X POST \
 ```
 
 # Error example
+
 ```
 {
     "message": "relationship definition must include type: 1..n, 1..1, n..n",
